@@ -1,138 +1,178 @@
-import time
-
-# Global variables to store system data
-robots = {}  # Dictionary to store robot IDs and their statuses
-workers = {}  # Dictionary to store worker IDs and their statuses
-tasks = []  # List to store tasks with details like type, duration, and assigned resources
-products = []  # List to manage products and their assembly steps
-
-# Functions
+# Store all our data in simple dictionaries and lists
+robots = {}  # Dictionary to store robots
+workers = {}  # Dictionary to store workers
+tasks = []   # List to store tasks
+products = [] # List to store products
 
 def add_robot(robot_id):
-    # Add a robot to the system if it does not already exist
+    """Add a new robot with given ID"""
     if robot_id in robots:
-        print(f"Robot {robot_id} already exists.")
-        return
-    robots[robot_id] = "idle"  # Set the robot's status to idle
-    print(f"Robot {robot_id} added successfully.")
-
-def remove_robot(robot_id):
-    # Remove a robot from the system if it exists and is idle
-    if robot_id not in robots:
-        print(f"Robot {robot_id} does not exist.")
-        return
-    if robots[robot_id] != "idle":
-        print(f"Cannot remove Robot {robot_id} as it is not idle.")
-        return
-    del robots[robot_id]  # Remove the robot from the dictionary
-    print(f"Robot {robot_id} removed successfully.")
+        print(f"Robot {robot_id} already exists!")
+        return False
+    
+    robots[robot_id] = {
+        "status": "idle",
+        "current_task": None
+    }
+    print(f"Added robot {robot_id} successfully!")
+    return True
 
 def add_worker(worker_id):
-    # Add a worker to the system if they do not already exist
+    """Add a new worker with given ID"""
     if worker_id in workers:
-        print(f"Worker {worker_id} already exists.")
-        return
-    workers[worker_id] = "idle"  # Set the worker's status to idle
-    print(f"Worker {worker_id} added successfully.")
+        print(f"Worker {worker_id} already exists!")
+        return False
+    
+    workers[worker_id] = {
+        "status": "idle",
+        "current_task": None
+    }
+    print(f"Added worker {worker_id} successfully!")
+    return True
+#    Remove a robot if it s not workin
+def remove_robot(robot_id):
 
+    if robot_id not in robots:
+        print(f"Robot {robot_id} not found!")
+        return False
+    
+    if robots[robot_id]["status"] == "working":
+        print(f"Cannot remove robot {robot_id} while it's working!")
+        return False
+    
+    del robots[robot_id]
+    print(f"Removed robot {robot_id} successfully!")
+    return True
+#    Remove a worker if they r not workin
 def remove_worker(worker_id):
-    # Remove a worker from the system if they exist and are idle
+
     if worker_id not in workers:
-        print(f"Worker {worker_id} does not exist.")
-        return
-    if workers[worker_id] != "idle":
-        print(f"Cannot remove Worker {worker_id} as they are not idle.")
-        return
-    del workers[worker_id]  # Remove the worker from the dictionary
-    print(f"Worker {worker_id} removed successfully.")
+        print(f"Worker {worker_id} not found!")
+        return False
+    
+    if workers[worker_id]["status"] == "working":
+        print(f"Cannot remove worker {worker_id} while they're working!")
+        return False
+    
+    del workers[worker_id]
+    print(f"Removed worker {worker_id} successfully!")
+    return True
 
-def assign_task(task_type, duration, required_robots=1, required_workers=1):
-    # Assign a task to available robots and workers if resources are sufficient
-    idle_robots = [r for r, status in robots.items() if status == "idle"]
-    idle_workers = [w for w, status in workers.items() if status == "idle"]
-
-    if len(idle_robots) < required_robots or len(idle_workers) < required_workers:
-        print("Not enough idle robots or workers available to assign the task.")
-        return
-
-    assigned_robots = idle_robots[:required_robots]  # Allocate required robots
-    assigned_workers = idle_workers[:required_workers]  # Allocate required workers
-
-    for r in assigned_robots:
-        robots[r] = "working"  # Update robot status to working
-    for w in assigned_workers:
-        workers[w] = "working"  # Update worker status to working
-
-    # Create and append task details to the tasks list
-    task = {
-        "type": task_type,
-        "duration": duration,
-        "robots": assigned_robots,
-        "workers": assigned_workers,
-        "status": "in progress"
+#Assign a new task
+def assign_task(task_name, robots_needed, workers_needed):
+    
+    available_robots = []
+    available_workers = []
+    
+    for robot_id in robots:
+        if robots[robot_id]["status"] == "idle":
+            available_robots.append(robot_id)
+    
+    for worker_id in workers:
+        if workers[worker_id]["status"] == "idle":
+            available_workers.append(worker_id)
+    
+    if len(available_robots) < robots_needed:
+        print(f"Not enough available robots! Need {robots_needed}, but only have {len(available_robots)}")
+        return False
+    
+    if len(available_workers) < workers_needed:
+        print(f"Not enough available workers! Need {workers_needed}, but only have {len(available_workers)}")
+        return False
+    
+    new_task = {
+        "name": task_name,
+        "status": "in_progress",
+        "robots": available_robots[:robots_needed],
+        "workers": available_workers[:workers_needed]
     }
-    tasks.append(task)
-    print(f"Task '{task_type}' assigned successfully.")
-
-def monitor_tasks():
-    # Monitor and update the status of ongoing tasks
+    
+    for robot_id in new_task["robots"]:
+        robots[robot_id]["status"] = "working"
+        robots[robot_id]["current_task"] = task_name
+    
+    for worker_id in new_task["workers"]:
+        workers[worker_id]["status"] = "working"
+        workers[worker_id]["current_task"] = task_name
+    
+    tasks.append(new_task)
+    print(f"Started task '{task_name}' successfully!")
+    return True
+# fun to show current status for robots and workers nd active tasks
+def show_status():
+    print("\n=== CURRENT STATUS ===")
+    
+    print("\nROBOTS:")
+    for robot_id in robots:
+        status = robots[robot_id]["status"]
+        task = robots[robot_id]["current_task"] or "no task"
+        print(f"Robot {robot_id}: {status} ({task})")
+    
+    print("\nWORKERS:")
+    for worker_id in workers:
+        status = workers[worker_id]["status"]
+        task = workers[worker_id]["current_task"] or "no task"
+        print(f"Worker {worker_id}: {status} ({task})")
+    
+    print("\nACTIVE TASKS:")
+    if not tasks:
+        print("No active tasks")
     for task in tasks:
-        if task["status"] == "in progress":
-            time.sleep(task["duration"])  # Simulate task duration
-            for r in task["robots"]:
-                robots[r] = "idle"  # Set robot status to idle
-            for w in task["workers"]:
-                workers[w] = "idle"  # Set worker status to idle
-            task["status"] = "completed"  # Mark task as completed
-            print(f"Task '{task['type']}' completed.")
+        print(f"Task: {task['name']}")
+        print(f"- Status: {task['status']}")
+        print(f"- Robots assigned: {task['robots']}")
+        print(f"- Workers assigned: {task['workers']}")
+    
+    print("\n===================")
 
-def assign_product(product_name, assembly_steps):
-    # Assign a product for assembly and manage its steps
-    product = {
-        "name": product_name,
-        "steps": assembly_steps,
-        "status": "in progress"
-    }
-    products.append(product)  # Add the product to the list
-    print(f"Product '{product_name}' assigned to the robotic cell.")
+def display_menu():
+    # Display the main menu options
+    print("\n=== ROBOTIC CELL MANAGEMENT SYSTEM ===")
+    print("1. Add Robot")
+    print("2. Add Worker")
+    print("3. Remove Robot")
+    print("4. Remove Worker")
+    print("5. Assign New Task")
+    print("6. Show Status")
+    print("7. Exit")
+    print("=====================================")
 
-    # Execute each step in the product's assembly process
-    for step in assembly_steps:
-        print(f"Starting step: {step['name']}")
-        assign_task(step['name'], step['duration'], step['robots'], step['workers'])
-        monitor_tasks()
+def main():
+    while True:
+        display_menu()
+        choice = input("Enter your choice (1-7): ")
+        
+        if choice == "1":
+            robot_id = input("Enter robot ID (e.g., R1): ")
+            add_robot(robot_id)
+        
+        elif choice == "2":
+            worker_id = input("Enter worker ID (e.g., W1): ")
+            add_worker(worker_id)
+        
+        elif choice == "3":
+            robot_id = input("Enter robot ID to remove: ")
+            remove_robot(robot_id)
+        
+        elif choice == "4":
+            worker_id = input("Enter worker ID to remove: ")
+            remove_worker(worker_id)
+        
+        elif choice == "5":
+            task_name = input("Enter task name (e.g., welding): ")
+            robots_needed = int(input("Enter number of robots needed: "))
+            workers_needed = int(input("Enter number of workers needed: "))
+            assign_task(task_name, robots_needed, workers_needed)
+        
+        elif choice == "6":
+            show_status()
+        
+        elif choice == "7":
+            print("Thank you for using the Robotic Cell Management System!")
+            break
+        
+        else:
+            print("Invalid choice! Please select 1-7")
 
-    product["status"] = "completed"  # Mark product assembly as completed
-    print(f"Product '{product_name}' fully assembled.")
-
-def display_status():
-    # Display the current status of robots, workers, and tasks
-    print("\nRobots:")
-    for r, status in robots.items():
-        print(f"  Robot {r}: {status}")
-
-    print("\nWorkers:")
-    for w, status in workers.items():
-        print(f"  Worker {w}: {status}")
-
-    print("\nTasks:")
-    for t in tasks:
-        print(f"  Task {t['type']}: {t['status']}")
-
-# Example Usage
 if __name__ == "__main__":
-    # Add robots and workers to the system
-    add_robot("R1")
-    add_robot("R2")
-    add_worker("W1")
-    add_worker("W2")
-
-    # Assign a product and its assembly steps
-    assign_product("Widget", [
-        {"name": "Welding", "duration": 2, "robots": 1, "workers": 1},
-        {"name": "Assembling", "duration": 3, "robots": 1, "workers": 1},
-        {"name": "Inspecting", "duration": 1, "robots": 1, "workers": 1}
-    ])
-
-    # Display the final status of the system
-    display_status()
+    main()
